@@ -2,7 +2,7 @@ apiVersion: kafka.strimzi.io/v1beta2
 kind: KafkaConnect
 metadata:
   namespace: appdev-kafka
-  name: kafka-connect-jdbc
+  name: kafka-connect-camel-jdbc
   annotations:
     strimzi.io/use-connector-resources: "true"  
 spec:
@@ -21,11 +21,13 @@ spec:
         image-registry.openshift-image-registry.svc:5000/appdev-kafka/camel-sql-kafka-connect:0.11.5
       type: docker
     plugins:
-      - name: jdbc
+      - name: camel-sql-kafka-connector
         artifacts:
-          - url: >-
-              http://httpd-example-appdev-kafka.apps.ocp4.quitala.eu/camel-sql-kafka-connector-0.11.5.tar.gz
+          - url: https://repo1.maven.org/maven2/org/apache/camel/kafkaconnector/camel-sql-kafka-connector/0.11.5/camel-sql-kafka-connector-0.11.5-package.tar.gz
             type: tgz
-
+      - name: mssql-jdbc
+        artifacts:
+          - url: https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/10.2.1.jre11/mssql-jdbc-10.2.1.jre11.jar
+            type: jar
   version: 3.1.0
   replicas: 1
