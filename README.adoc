@@ -105,7 +105,7 @@ Then issue the follwing commands:
 2> GO
 ----
 
-Now it is time to create a database with the name dbo.order1, and also setup an orders table in that schema (use the sa user to create the new database and table and grant permissions):
+Now it is time to create a database with the name `+dbo.order1+`, and also setup an orders table in that schema (use the sa user to create the new database and table and grant permissions):
 
 `Order` table creation in SQL server:
 
@@ -160,7 +160,7 @@ that were created by Kafka Connect, you can use Kafdrop or kafka-console-consume
 
 [source,console]
 ----
-./kafka-console-consumer.sh --bootstrap-server event-broker-dr-kafka-bootstrap.appdev-kafka.svc:9092 --topic inventory.inventory.orders --from-beginning
+oc exec -c kafka event-broker-dr-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic inventory.inventory.orders --from-beginning
 ----
 
 === Start Apache Camel SQL Kafka Sink Connector
