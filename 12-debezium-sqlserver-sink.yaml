@@ -68,6 +68,7 @@ spec:
   - camel:jackson
   - camel:kamelet
   - camel:sql
+  - camel:jsonpath
   - mvn:org.apache.commons:commons-dbcp2:2.7.0.redhat-00001
   - mvn:com.microsoft.sqlserver:mssql-jdbc:9.2.1.jre11
   template:
@@ -89,12 +90,16 @@ spec:
       - unmarshal:
           json:
             library: Jackson
-      - transform:
-          jsonpath: $.payload.after
-      - to:
-          uri: sql:{{insertQuery}}
-          parameters:
-            dataSource: '#bean:{{dsBean}}'
+      - choice:
+          when:
+            - jsonpath: "$.payload[?(@.before==null && @.after!=null)]"
+              steps:
+                - transform:
+                    jsonpath: "$.payload.after"
+                - to:
+                    uri: sql:{{insertQuery}}
+                    parameters:
+                      dataSource: '#bean:{{dsBean}}'
   types:
     in:
       mediaType: application/json
