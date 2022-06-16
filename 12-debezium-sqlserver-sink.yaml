@@ -29,6 +29,10 @@ spec:
         description: The Database Name we are pointing
         title: Database Name
         type: string
+      username:
+        description: The username to use for accessing a secured SQL Server Database
+        title: Username
+        type: string
       password:
         description: The password to use for accessing a secured SQL Server Database
         format: password
@@ -37,11 +41,6 @@ spec:
         x-descriptors:
         - urn:alm:descriptor:com.tectonic.ui:password
         - urn:camel:group:credentials
-      insertQuery:
-        description: The Insert Query to execute against the SQL Server Database
-        example: INSERT INTO accounts (username,city) VALUES (:#username,:#city)
-        title: Insert Query
-        type: string
       serverName:
         description: Server Name for the data source
         example: localhost
@@ -52,15 +51,28 @@ spec:
         description: Server Port for the data source
         title: Server Port
         type: string
-      username:
-        description: The username to use for accessing a secured SQL Server Database
-        title: Username
+      insertQuery:
+        description: The Insert Query to execute against the SQL Server Database
+        example: INSERT INTO accounts (username,city) VALUES (:#username,:#city)
+        title: Insert Query
+        type: string
+      updateQuery:
+        description: The Update Query to execute against the SQL Server Database
+        example: UPDATE
+        title: Insert Query
+        type: string
+      deleteQuery:
+        description: The Delete Query to execute against the SQL Server Database
+        example: DELETE
+        title: Insert Query
         type: string
     required:
     - serverName
     - username
     - password
     - insertQuery
+    - updateQuery
+    - deleteQuery
     - databaseName
     title: Microsoft SQL Server Sink
     type: object
@@ -98,6 +110,22 @@ spec:
                     jsonpath: "$.payload.after"
                 - to:
                     uri: sql:{{insertQuery}}
+                    parameters:
+                      dataSource: '#bean:{{dsBean}}'
+            - jsonpath: "$.payload[?(@.before!=null && @.after!=null)]"
+              steps:
+                - transform:
+                    jsonpath: "$.payload.after"
+                - to:
+                    uri: sql:{{updateQuery}}
+                    parameters:
+                      dataSource: '#bean:{{dsBean}}'
+            - jsonpath: "$.payload[?(@.before!=null && @.after==null)]"
+              steps:
+                - transform:
+                    jsonpath: "$.payload.before"
+                - to:
+                    uri: sql:{{deleteQuery}}
                     parameters:
                       dataSource: '#bean:{{dsBean}}'
   types:
