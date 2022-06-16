@@ -1,0 +1,35 @@
+apiVersion: camel.apache.org/v1alpha1
+kind: KameletBinding
+metadata:
+  name: kafka-mssql-binding
+spec:
+  source:
+    ref:
+      kind: Kamelet
+      apiVersion: camel.apache.org/v1alpha1
+      name: kafka-source
+    properties:
+      bootstrapServers: event-broker-dr-kafka-bootstrap.appdev-kafka.svc:9092
+      topic: inventory.inventory.orders
+      user: kuser
+      password: Secret123
+      securityProtocol: PLAINTEXT
+  # sink:
+  #   ref:
+  #     kind: Kamelet
+  #     apiVersion: camel.apache.org/v1alpha1
+  #     name: log-sink
+  #   properties:
+  #     showStreams: true
+  sink:
+    ref:
+      kind: Kamelet
+      apiVersion: camel.apache.org/v1alpha1
+      name: debezium-sqlserver-sink
+    properties:
+      databaseName: master
+      serverPort: 31433
+      username: sa
+      password: change-mssql-pwd
+      insertQuery: "INSERT INTO dbo.order1 (id, order_date, purchaser, quantity, product_id) VALUES (:#id , :#order_date, :#purchaser, :#quantity , :#product_id)"
+      serverName: mssql-service.appdev-kafka.svc

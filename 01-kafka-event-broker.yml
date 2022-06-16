@@ -15,8 +15,6 @@ spec:
         port: 9093
         type: route
         tls: true
-        authentication:
-          type: scram-sha-512
     readinessProbe:
       initialDelaySeconds: 15
       timeoutSeconds: 5
