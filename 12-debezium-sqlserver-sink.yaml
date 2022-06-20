@@ -104,6 +104,9 @@ spec:
             library: Jackson
       - choice:
           when:
+            - simple: "${body.size} == 0"
+              steps:
+                - stop: {}
             - jsonpath: "$.payload[?(@.before==null && @.after!=null)]"
               steps:
                 - transform:
