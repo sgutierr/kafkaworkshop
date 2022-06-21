@@ -1,0 +1,10 @@
+# hidden dir
+**/.*
+!/.gitignore
+
+# generated resources
+/bin/
+**/target/
+**/project.repositories
+*.backup
+

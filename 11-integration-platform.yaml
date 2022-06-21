@@ -1,0 +1,12 @@
+kind: IntegrationPlatform
+apiVersion: camel.apache.org/v1
+metadata:
+  labels:
+    app: integration-plat
+  name: integration-plat
+  namespace: appdev-kafka
+spec:
+  build: {}
+  kamelet: {}
+  profile: Openshift
+  resources: {}
