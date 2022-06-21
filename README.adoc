@@ -2,7 +2,7 @@
 
 This demo for Red Hat Streams (Kafka) will show how to replicate data and
 data changes from a Postgres database with Debezium into a SQLServer db
-using a Camel SQL Kafka Connector.
+using Kamelets.
 
 image::images/debezium-postgresql-sqlserver.png[]
 
@@ -128,31 +128,6 @@ oc apply -f 04-debezium-postgresql-connect.yml -n appdev-kafka
 oc apply -f 05-debezium-postgresql-connector.yml -n appdev-kafka
 ----
 
-=== Create a Custom AMQ Streams Kafka Connect Image 
-
-*Note* You don't have to do anything in this section if you have access this file: http://httpd-example-appdev-kafka.apps.ocp4.quitala.eu/camel-sql-kafka-connector-0.11.5.tar.gz ,since I built the connector tar.gz for you.
-
-Build and push a custom container image for AMQ Streams Kafka Connect:
-
-* Install `camel-sql-kafka-connector` package and Debezium connectors
-
-* Add SQL Server driver into the `camel-sql-kafka-connector` directory
-
-* Add `camel-debezium-common` and `debezium-core` jars into the `camel-sql-kafka-connector` directory
-
-To sum up these are the files included in the tar.gz file (connector):
-
-* Camel-sql-kafka-connector-0.11.5-package : camel sql kafka connector.
-
-* Camel-debezium-common-3.9.0.jar : debezium tools for camel
-
-* Mssql-jdbc-10.2.0.jre11.jar : driver SQL Server 
-
-* debezium-core-1.9.2.Final.jar : debezium transformations and other features.
-
-Tar.gz the directory camel-sql-kafka-connector-0.11.5.tar.gz
-
-
 === Check Messages in Managed Kafka
 
 Now check if messages arrived in the Change Data Capture (CDC) Kafka topics
@@ -163,32 +138,77 @@ that were created by Kafka Connect, you can use Kafdrop or kafka-console-consume
 oc exec -c kafka event-broker-dr-kafka-0 -- bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic inventory.inventory.orders --from-beginning
 ----
 
-=== Start Apache Camel SQL Kafka Sink Connector
+=== Enable Kamelets in your environment
 
-Now it's time to connect to that SQL server instance which was created
-earlier and setup a `order1` table in that schema :
+IMPORTANT: To leverage *Kamelets*, you have to install the *Red Hat Integration - Camel K* Operator
 
-For the configuration of the Apache Camel SQL Kafka Sink Connector
-`camel.component.sql.dataSource.user` and
-`camel.component.sql.dataSource.password` are also referenced from the
-properties files in the secrets previously created in the
-<<Create Database Secrets for Connectors>> section.
+1. Navigate to the *OperatorHub* (Operators -> OperatorHub)
+2. Type `camel` in the Filter by keyword
+3. Select on the *Red Hat Integration - Camel K* Operator
+4. Click *Install*
+5. Review the default options, and click *Subscribe*
 
-Data shoudld be read from the Kafka topic of the `order1` table,
-which is `inventory.inventory.products`.
-
-The connector will apply Debezium's `ExtractNewRecordState`
-Single-Message-Transform (SMT) and use the provided SQL Server
-query to write messages into that `dbo.order1`
-table.
-
-Applying that config to start the Camel SQL Kafka Sink Connector:
+The following step *add a user* in the Kafka configuration because the default Source Kafka Kamelet expects it to work properly.
 
 [source,console]
 ----
-oc apply -f 06-camelsqlkafkaconnect.yml -n appdev-kafka
-oc apply -f 07-camel-sql-connector-sink.yaml -n appdev-kafka
+oc apply -f 10-kuser.yaml -n appdev-kafka
 ----
+
+The goal of the following command is to create an _Integration Platform_ in the target _namespace_, which is a prerequisite to leverage the predefined Kamelets and to define new ones.
+
+Optionally, explore the https://camel.apache.org/camel-kamelets/0.8.x/index.html[kamelet catalog].
+
+[source,console]
+----
+oc apply -f 11-integration-platform.yaml -n appdev-kafka
+----
+
+=== Connecting Kafka with Microsoft SQL Server
+
+Kamelets (*Kamel* route snipp**ets**) allow users to connect to external systems via a simplified interface, hiding all the low level details about how those connections are implemented.
+
+A Kamelet can act as *"source"* of data or alternatively as *"sink"*: a _source_ allows to consume data from an external system, while a _sink_ can let you send data to an external system or execute a particular action and get a result.
+
+The user can leverage the *Kamelet* power with a little knowledge of their actual implementation by combining two existing Kamelets (a source and a sink) inside a *Kamelet Binding*.
+
+The *Kamelet Binding* defines what are the source and the sink Kamelet and their specific runtime parameters. So in our specific usecase we should define:
+
+- *Kafka Source* Kamelet with its own parameters (bootstrap URL, credentials, etc)
+- *Microsoft SQL Server Sink* Kamelet with its own parameters (db name, credentials, etc)
+
+Regrettably, the Microsoft SQL Server Kamelet is not able to manage the message coming from *Debezium* so we need to create a new one to perform the following tasks:
+
+- Distinguish differents events coming from _Debezium_ (insert, delete and update)
+- Accept 3 different queries to handle properly the incoming events
+- Feed the correct payload (a JSON containing the records values)
+
+For further details inspect the link:12-debezium-sqlserver-sink.yaml[Kamelet definition].
+
+Create the new _Debezium aware_ Microsoft SQL Server Kamelet:
+
+[source,console]
+----
+oc apply -f 12-debezium-sqlserver-sink.yaml -n appdev-kafka
+----
+
+Finally, create the *Kamelets binding* to bind together _Kafka_ and _Microsoft SQL Server_:
+
+[source,console]
+----
+oc apply -f 13-kafka-mssql-binding.yaml -n appdev-kafka
+----
+
+Wait until the Kamelet bindings gets `READY`: 
+
+[source,console]
+----
+$ oc get -w kameletbinding
+NAME                  PHASE   REPLICAS
+kafka-mssql-binding   Ready   1
+----
+
+A new pod is started executing the integration logic (e.g.: `kafka-mssql-binding-8c6db8d75-h9tcp`)
 
 === Validating Data Arrived in SQL Server
 
@@ -204,7 +224,7 @@ SELECT * FROM order1;
 # +-------+--------------------+-------------+------------+-------------------+
 # | 10001 |    2016-01-31      |    1001     |     1      |       102         |
 # | 10002 |    2016-01-31      |    1002     |     1      |       105         |
-# | 10003 |    2016-01-31      |    1002     |     1      |       106         |
+# | 10003 |    2016-01-31      |    1002     |     1      |       106         | 
 # | 10004 |    2016-01-31      |    1003     |     1      |       107         |
 # +-------+--------------------+-------------+------------+-------------------+
 # 4 rows in set (0.01 sec)
