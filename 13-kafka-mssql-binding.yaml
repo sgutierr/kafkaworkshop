@@ -30,7 +30,7 @@ spec:
       databaseName: master
       serverPort: 31433
       username: sa
-      password: change-mssql-pwd
+      password: Chang3-mssql-pwd!
       insertQuery: "INSERT INTO dbo.order1 (id, order_date, purchaser, quantity, product_id) VALUES (:#id , :#order_date, :#purchaser, :#quantity , :#product_id)"
       updateQuery: "UPDATE dbo.order1 SET order_date = :#order_date, purchaser = :#purchaser, quantity = :#quantity, product_id = :#product_id WHERE id = :#id"
       deleteQuery: "DELETE FROM dbo.order1 WHERE id = :#id"

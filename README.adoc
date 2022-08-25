@@ -95,7 +95,7 @@ Database client, two options:
 
 * Through port-forwarding option to access from your local: `+oc port-forward <msql_pod_name> 1433:1433+`
 
-* Get into the pod and `/opt/mssql-tools/bin/sqlcmd -U sa -P change-mssql-pwd`
+* Get into the pod and `/opt/mssql-tools/bin/sqlcmd -U sa -P Chang3-mssql-pwd!`
 
 Then issue the follwing commands:
 
