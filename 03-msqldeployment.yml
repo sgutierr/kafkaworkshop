@@ -1,7 +1,7 @@
-#oc create secret generic mssql --from-literal=SA_PASSWORD="change-mssql-pwd"
+#oc create secret generic mssql --from-literal=SA_PASSWORD="Chang3-mssql-pwd!"
 apiVersion: v1
 data:
-  SA_PASSWORD: Y2hhbmdlLW1zc3FsLXB3ZA==
+  SA_PASSWORD: Q2hhbmczLW1zc3FsLXB3ZCE=
 kind: Secret
 metadata:
   name: mssql

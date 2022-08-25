@@ -1,0 +1,37 @@
+apiVersion: camel.apache.org/v1alpha1
+kind: KameletBinding
+metadata:
+  name: kafka-mssql-binding
+spec:
+  source:
+    ref:
+      kind: Kamelet
+      apiVersion: camel.apache.org/v1alpha1
+      name: kafka-source
+    properties:
+      bootstrapServers: event-broker-dr-kafka-bootstrap.appdev-kafka.svc:9092
+      topic: inventory.inventory.orders
+      user: kuser
+      password: Secret123
+      securityProtocol: PLAINTEXT
+  # sink:
+  #   ref:
+  #     kind: Kamelet
+  #     apiVersion: camel.apache.org/v1alpha1
+  #     name: log-sink
+  #   properties:
+  #     showStreams: true
+  sink:
+    ref:
+      kind: Kamelet
+      apiVersion: camel.apache.org/v1alpha1
+      name: debezium-sqlserver-sink
+    properties:
+      databaseName: master
+      serverPort: 31433
+      username: sa
+      password: Chang3-mssql-pwd!
+      insertQuery: "INSERT INTO dbo.order1 (id, order_date, purchaser, quantity, product_id) VALUES (:#id , :#order_date, :#purchaser, :#quantity , :#product_id)"
+      updateQuery: "UPDATE dbo.order1 SET order_date = :#order_date, purchaser = :#purchaser, quantity = :#quantity, product_id = :#product_id WHERE id = :#id"
+      deleteQuery: "DELETE FROM dbo.order1 WHERE id = :#id"
+      serverName: mssql-service.appdev-kafka.svc
